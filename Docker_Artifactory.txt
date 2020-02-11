@@ -1,0 +1,89 @@
+############################################################################
+##################   Install DOCKER On Ubuntu      #########################
+############################################################################
+apt-get update
+apt-get install default-jre
+apt-get install default-jdk
+
+Install Docker Engine:
+######################
+Install packages to allow apt to use a repository over HTTPS:
+-------------------------------------------------------------
+apt -y install apt-transport-https \
+ca-certificates \
+curl \
+software-properties-common 
+
+Add Docker’s official GPG key:
+------------------------------
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+Add stable repository:
+----------------------
+add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+Install Docker CE:
+------------------
+apt update && sudo apt -y install docker-ce
+
+## If you would like to use Docker as a non-root user, you should now consider adding your user to the “docker” group with something like:
+## usermod -aG docker $USER
+
+Download JFrog Artifactory Docker image:
+########################################
+
+Pull the latest Docker image of JFrog Artifactory:
+--------------------------------------------------
+docker pull docker.bintray.io/jfrog/artifactory-oss:latest
+
+For CE edition:
+--------------
+docker pull docker.bintray.io/jfrog/artifactory-cpp-ce
+
+Confirm Docker images:
+---------------------
+docker images
+
+Create Data Directory:
+----------------------
+mkdir -p /jfrog/artifactory
+chown -R 1030 /jfrog/
+
+Start JFrog Artifactory container:
+-----------------------------------
+docker run --name artifactory -d -p 8081:8081 \
+    -v /jfrog/artifactory:/var/opt/jfrog/artifactory \
+    docker.bintray.io/jfrog/artifactory-oss:latest
+
+Running JFrog Artifactory container with Systemd:
+--------------------------------------------------
+
+vi /etc/systemd/system/artifactory.service
+--------------------------------------------------------------
+[Unit]
+Description=Setup Systemd script for Artifactory Container
+After=network.target
+
+[Service]
+Restart=always
+ExecStartPre=-/usr/bin/docker kill artifactory
+ExecStartPre=-/usr/bin/docker rm artifactory
+ExecStart=/usr/bin/docker run --name artifactory -p 8081:8081 \
+  -v /jfrog/artifactory:/var/opt/jfrog/artifactory \
+  docker.bintray.io/jfrog/artifactory-oss:latest
+ExecStop=-/usr/bin/docker kill artifactory
+ExecStop=-/usr/bin/docker rm artifactory
+
+[Install]
+WantedBy=multi-user.target
+---------------------------------------------------------------
+
+systemctl daemon-reload               ---> Reload systemd
+systemctl start artifactory           ---> start Artifactory container with systemd
+systemctl enable artifactory          ---> Enable it to start at system boot
+systemctl status artifactory          ---> Status check
+ss -tunelp | grep 8081                ---> Check service binding
+
+Artifactory can be accessed using the following URL:
+----------------------------------------------------
+http://SERVERIP_OR_DOMAIN:8081/artifactory

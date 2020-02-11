@@ -1,0 +1,19 @@
+{
+	"Parameters": {
+		"BucketName": {
+			"Type": "String",
+			"Default": "sandeeps3bkt",
+			"Description": "sandeep s3 bucket formation with cloudformation"
+		}
+	},
+	"Resources": {
+		"S3Bucket": {
+			"Type": "AWS::S3::Bucket",
+			"Properties": {
+				"BucketName": {
+					"Ref": "BucketName"
+				}
+			}
+		}
+	}
+}

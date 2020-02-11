@@ -1,0 +1,76 @@
+Uploading binary file to S3 bucket using API GateWay
+#################################################
+
+Creation of new Lambda Function
+###############################
+Lambda Management Console:
+	└ Create Lambda Function
+		└ Function Name
+		└ Runtime --->choose the language to write the function
+		└ Execution role ---> create role give permissions(Full access for API GateWay)
+		
+Function Code:
+--------------
+import json
+import base64
+import boto3
+BUCKET_NAME = 'upload-binary'
+def lambda_handler(event, context):
+    file_content = base64.b64decode(event['content'])
+    file_path = 'content.pdf'
+    s3 = boto3.client('s3')
+    try:
+        s3_response = s3.put_object(Bucket=BUCKET_NAME, Key=file_path, Body=file_content)
+    except Exception as e:
+        raise IOError(e)
+    return {
+        'statusCode': 200,
+        'body': {
+            'file_path': file_path
+        }
+    }
+
+Create of S3 Bucket:
+####################
+Create Bucket:
+	└ Bucket Name
+	└ Region
+	└ Click on Create
+	
+Open API GateWay:
+#################
+Create new API:
+	└API Name :
+Resources:
+	└Actions
+		└ Create Resource
+		└ Create Method
+			└ Post  -----> Take post Method
+				└ Integration type   ----> select Lambda Function
+				└ Lambda Function    ----> Write create Lambda Function Name
+			└ Integration request
+				└ Mapping Templates
+					└ Add Mapping Templates : application/pdf
+							{
+								"content":"$input.body"
+							}
+Click on Settings:
+------------------
+Binary Media Types
+	└ Add Binary Media Type : application/pdf
+
+Goto Resources : Actions --> Deploy API  --> New Stage --> Give Name --> Click on Deploy  --> Copy Invoke URL
+
+
+curl --request POST -H "Content-Type: application/pdf" --data-binary "@/path/to/your/file.pdf" https://YOUR_API_GATEWAY_ID.execute-api.us-east-1.amazonaws.com/v1/upload
+
+
+Goto PostMan App:
+#################
+
+Create Request
+		└ set post : Paste URL/Resource name in API
+		└ Click on Header
+			└ Key : Content-Type, Value: application/pdf
+		└ Click on Body : Set as binary
+			└ Select file  ---> which one you want to upload 

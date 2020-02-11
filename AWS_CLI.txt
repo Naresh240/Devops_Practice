@@ -1,0 +1,103 @@
+AWS Cli installation:
+---------------------
+
+1. Install Python
+	yum install python3 -y    ----> Installation
+	python3 --version		  ----> checking whether python installed or not
+2. Install Pip
+	curl -O https://bootstrap.pypa.io/get-pip.py   ---->Use the curl command to download the installation script
+	python3 get-pip.py --user		----->Run the script with Python to download and install the latest version of pip and other required support packages
+	export PATH=~/.local/bin:$PATH  ----->Add an export command at the end of your profile script 
+	pip3 --version			  		----->checking whether pip3 installed or not
+3. Install AWS Cli
+	pip3 install awscli --upgrade --user
+	aws --version
+	aws configuration
+	
+Create EC2 instance using AWS-Cli:
+----------------------------------
+aws ec2 run-instances \
+    --image-id ami-0c322300a1dd5dc79 \
+    --count 1 \
+    --instance-type t2.micro \
+    --key-name Naresh_virginia_Nov \
+    --security-groups default
+	
+	
+aws ec2 stop-instances --instance-ids i-0bbb6ddd1b86a4984
+
+aws ec2 terminate-instances --instance-ids i-0bbb6ddd1b86a4984
+
+Create S3 bucket using AWS-Cli:
+-------------------------------
+aws s3 mb s3://buckettest1 --region us-east-1
+
+
+Creating sqlserver DB Using AWS-CLI:
+########################################
+aws rds create-db-instance \
+    --allocated-storage 20 \
+	--db-instance-class db.m4.large \
+    --db-instance-identifier sqlserver-instance \
+    --engine sqlserver-web \
+    --port 1433 \
+    --master-username master \
+    --master-user-password secret99 \
+    --publicly-accessible
+
+Creating oracle DB Using AWS-CLI:
+#################################
+aws rds create-db-instance \
+  --allocated-storage 20 \
+  --db-instance-class db.m5.large \
+  --db-instance-identifier oraclerdsexample \
+  --engine oracle-se \
+  --backup-retention-period 3 \
+  --db-subnet-group default \
+  --master-username admin \
+  --master-user-password admin123 
+
+  
+Creating postgres DB Using AWS-CLI:
+#################################
+aws rds create-db-instance \
+  --db-instance-identifier pgdb-instance \
+  --allocated-storage 20 \
+  --db-instance-class db.t2.micro \
+  --engine postgres \
+  --master-username postgres \
+  --master-user-password admin123
+  
+  
+Creating sqlserver-web DB Using AWS-CLI:
+########################################
+aws rds create-db-instance \
+    --allocated-storage 20 \
+	--db-instance-class db.m4.large \
+    --db-instance-identifier test-instance \
+    --engine sqlserver-web \
+    --port 1433 \
+    --master-username master \
+    --master-user-password secret99 \
+    --publicly-accessible
+
+Creating aurora-mysql DB Using AWS-CLI:
+########################################	
+aws rds create-db-cluster \
+  --db-cluster-identifier aurora-mysql-cluster \
+  --engine aurora-mysql \
+  --engine-version 5.7.12 \
+  --master-username admin \
+  --master-user-password admin123 \
+  --db-subnet-group-name default \
+  --vpc-security-group-ids sg-8746f2d5
+
+  
+aws rds create-db-instance \
+  --db-instance-identifier aurora-mysql-instance \
+  --db-cluster-identifier aurora-mysql-cluster \ 
+  --engine aurora-mysql \
+  --db-instance-class db.r4.large
+	
+	
+

@@ -1,0 +1,96 @@
+########################################################################
+############ Installation for apache-tomcat-9 in Ubuntu#################
+########################################################################
+
+
+apt update
+
+apt install default-jdk -y
+
+java --version
+
+mkdir /opt/tomcat
+
+useradd -s /bin/false -d /opt/tomcat tomcat
+
+wget http://apachemirror.wuchna.com/tomcat/tomcat-9/v9.0.29/bin/apache-tomcat-9.0.29.tar.gz
+
+tar xzvf apache-tomcat-9.0.29.tar.gz -C /opt/tomcat --strip-components=1
+
+
+chgrp -R tomcat /opt/tomcat
+cd /opt/tomcat/
+chmod -R g+r conf
+chmod g+x conf
+
+chown -R tomcat webapps/ work/ temp/ logs/
+
+update-java-alternatives -l
+
+/usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+
+vi /etc/systemd/system/tomcat.service
+-------------------------------------
+[Unit]
+Description=Apache Tomcat Web Application Container
+After=network.target
+
+[Service]
+Type=forking
+
+Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+Environment=CATALINA_HOME=/opt/tomcat
+Environment=CATALINA_BASE=/opt/tomcat
+Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+ExecStart=/opt/tomcat/bin/startup.sh
+ExecStop=/opt/tomcat/bin/shutdown.sh
+
+User=tomcat
+Group=tomcat
+UMask=0007
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+-------------------------
+systemctl daemon-reload
+systemctl start tomcat
+systemctl enable tomcat
+systemctl status tomcat
+
+ufw allow 8080
+
+
+vi /opt/tomcat/conf/tomcat-users.xml
+
+
+vi /opt/tomcat/webapps/manager/META-INF/context.xml
+vi /opt/tomcat/webapps/host-manager/META-INF/context.xml
+
+
+systemctl restart tomcat.service
+systemctl status tomcat.service
+
+
+keytool -genkey -alias tomcat -keyalg  RSA  -keystore /opt/tomcat/naresh
+
+keytool -list -keystore /opt/tomcat/naresh
+
+vi /opt/tomcat/conf/server.xml
+
+		<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+               maxThreads="150" SSLEnabled="true"
+               keystoreFile="/opt/tomcat/naresh" keystorePass="naresh">
+
+			   
+systemctl restart tomcat.service
+systemctl status tomcat.service
+
+Check:
+------
+https://3.89.8.91:8443/

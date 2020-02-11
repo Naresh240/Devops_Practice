@@ -1,0 +1,188 @@
+Create User For Prometheus & node_exporter
+###########################################
+
+useradd --no-create-home --shell /bin/false prometheus
+useradd --no-create-home --shell /bin/false node_exporter
+
+Create Directories for Prometheus & node_exporter
+#################################################
+
+mkdir /etc/prometheus
+mkdir /var/lib/prometheus
+
+Adding Permissions for above Directories
+########################################
+
+chown prometheus:prometheus /etc/prometheus
+chown prometheus:prometheus /var/lib/prometheus
+
+#########################################################################################
+#########################################prometheus######################################
+#########################################################################################
+
+wget https://github.com/prometheus/prometheus/releases/download/v2.14.0/prometheus-2.14.0.linux-amd64.tar.gz
+tar xvfz prometheus-2.14.0.linux-amd64.tar.gz
+
+cp prometheus-2.14.0.linux-amd64/prometheus /usr/local/bin
+cp prometheus-2.14.0.linux-amd64/promtool /usr/local/bin
+
+chown prometheus:prometheus /usr/local/bin/prometheus
+chown prometheus:prometheus /usr/local/bin/promtool
+
+cp -r prometheus-2.14.0.linux-amd64/consoles /etc/prometheus/
+cp -r prometheus-2.14.0.linux-amd64/console_libraries/ /etc/prometheus/
+cd prometheus-2.14.0.linux-amd64/
+
+chown -R prometheus:prometheus /etc/prometheus/consoles
+chown -R prometheus:prometheus /etc/prometheus/console_libraries
+
+rm -rf prometheus-2.14.0.linux-amd64 prometheus-2.14.0.linux-amd64.tar.gz
+
+vi /etc/prometheus/prometheus.yml
+----------------------------------
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+------------------------------------
+
+chown prometheus:prometheus /etc/prometheus/prometheus.yml
+
+sudo -u prometheus /usr/local/bin/prometheus \
+    --config.file /etc/prometheus/prometheus.yml \
+    --storage.tsdb.path /var/lib/prometheus/ \
+    --web.console.templates=/etc/prometheus/consoles \
+    --web.console.libraries=/etc/prometheus/console_libraries
+	
+vi /etc/systemd/system/prometheus.service
+------------------------------------------
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+    --config.file /etc/prometheus/prometheus.yml \
+    --storage.tsdb.path /var/lib/prometheus/ \
+    --web.console.templates=/etc/prometheus/consoles \
+    --web.console.libraries=/etc/prometheus/console_libraries
+
+[Install]
+WantedBy=multi-user.target
+------------------------------------------
+
+systemctl daemon-reload
+systemctl start prometheus
+systemctl status prometheus
+
+#########################################################################################
+######################################node_exporter######################################
+#########################################################################################
+
+wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+tar xvfz node_exporter-0.18.1.linux-amd64.tar.gz
+
+cp node_exporter-0.18.1.linux-amd64/node_exporter /usr/local/bin/
+chown node_exporter:node_exporter /usr/local/bin/node_exporter
+
+rm -rf node_exporter-0.18.1.linux-amd64 node_exporter-0.18.1.linux-amd64.tar.gz
+
+vi /etc/systemd/system/node_exporter.service
+----------------------------------------------
+[Unit]
+Description=Node Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+---------------------------------------------
+
+systemctl daemon-reload
+systemctl start node_exporter
+systemctl status node_exporter
+systemctl enable node_exporter
+
+vi /etc/prometheus/prometheus.yml
+----------------------------------
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'node_exporter'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9100']    
+-----------------------------------
+
+systemctl restart prometheus
+systemctl status prometheus
+
+#########################################################################################
+####################################Install-nginx########################################
+#########################################################################################
+
+apt-get install nginx
+ufw app list
+ufw allow 'Nginx HTTP'
+ufw status
+
+systemctl status nginx
+ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'
+apt-get install curl
+curl -4 icanhazip.com
+
+#########################################################################################
+###################################Securing Prometheus###################################
+#########################################################################################
+
+#Start by installing apache2-utils, which will give you access to the htpasswd utility for generating password files
+
+apt-get update
+apt-get install apache2-utils
+
+#create password
+----------------
+
+htpasswd -c /etc/nginx/.htpasswd naresh
+
+cp /etc/nginx/sites-available/default /etc/nginx/sites-available/prometheus
+
+vi /etc/nginx/sites-available/prometheus
+-----------------------------------------------
+location / {
+        auth_basic "Prometheus server authentication";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://localhost:9090;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+------------------------------------------------
+
+rm /etc/nginx/sites-enabled/default
+ln -s /etc/nginx/sites-available/prometheus /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+systemctl status nginx
+

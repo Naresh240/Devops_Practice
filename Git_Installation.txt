@@ -1,0 +1,60 @@
+Install git on RHEL:
+#####################
+cd /opt
+
+yum install wget
+yum install git -y
+
+git --version
+
+
+Configure git with github:
+--------------------------
+git config --global user.name "Naresh240"
+git config --global user.email "Naresh240.qis@gmail.com"
+git config --list
+
+Generate key:
+-------------
+ssh-keygen -t rsa -b 4096
+cat ~/.ssh/id_rsa.pub
+ssh -T git@github.com
+
+git initilization in a repository:
+----------------------------------
+git init
+
+Add remote Repository with origin:
+----------------------------------
+git remote add set-url 
+
+Pull files from Remote repository to local repository:
+------------------------------------------------------
+git pull origin master
+
+Add and push files to Remote repository:
+-------------------------------
+git add sample.txt
+git commit -m "Sample txt file for Practice"
+git push origin master
+
+
+git rm --cached <file-name>
+git status
+git add *.html
+
+git add .
+
+
+
+git branch <branch-name>
+
+git checkout <branch-name>          ------> changed to new branch
+
+git merge <branch-name>           -----> Merge branches
+
+git branch -d <branch-name>       -------> Delete branch
+
+
+
+

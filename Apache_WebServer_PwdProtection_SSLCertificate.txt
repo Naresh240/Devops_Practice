@@ -1,0 +1,65 @@
+######################################################
+################ APACHE WEB SERVER ###################
+######################################################
+
+Install APACHE2 HTTP Server
+---------------------------
+apt install apache2 -y
+apache2 -version
+service apache2 start
+
+vi /etc/apache2/sites-available/000-default.conf
+
+<Directory /var/www/html> 
+Options Indexes Includes FollowSymLinks MultiViews 
+AllowOverride All 
+Require all granted 
+</Directory>
+
+
+service apache2 restart
+
+
+To set Password:
+----------------
+htpasswd -c /home/ubuntu/webpass ubuntu
+
+Change ownership and mode for files:
+------------------------------------
+chown www-data /home/ubuntu/webpass
+
+chmod -R 640 /home/ubuntu/webpass
+
+vi /var/www/html/.htaccess
+
+AuthType Basic
+AuthName "Restricted Access"
+AuthUserFile /home/ubuntu/webpass
+Require user ubuntu
+
+Convert http to https:
+----------------------
+
+Creating Self-Signed Certificates:
+----------------------------------
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/naresh240.com.key -out /etc/ssl/certs/naresh240.com.crt
+
+Installing The Certificates:
+----------------------------
+vi /etc/apache2/sites-available/default-ssl.conf
+
+	SSLCertificateFile      /etc/ssl/certs/naresh240.com.crt
+	SSLCertificateKeyFile   /etc/ssl/private/naresh240.com.key
+
+Next, open Apache2 default site config file and make sure the domain name is defined
+
+vi /etc/apache2/sites-available/000-default.conf
+
+	ServerName naresh240.com
+	ServerAlias www.naresh240.com
+
+apachectl configtest
+a2enmod ssl
+a2ensite default-ssl
+service apache2 restart
+
