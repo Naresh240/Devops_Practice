@@ -1,0 +1,135 @@
+spring-boot-postgres with Kubernates
+#####################################
+Prerequisits
+  -java,wget,git,apache-maven,docker
+  -Dockerhub
+  -kubectl,kops
+  -awscli
+###################################### 
+To update yum
+yum update -y
+
+To install java for java files
+yum install java-1.8.0-openjdk java-1.8.0-openjdk-devel -y
+
+To install wget and git
+yum install wget git -y
+
+To install awscli on RHEL
+yum install python2-pip -y
+pip2 install awscli
+aws configure
+
+To install apache-maven-3.6.3
+cd /opt
+wget http://mirrors.estointernet.in/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+tar -xvzf apache-maven-3.6.3-bin.tar.gz
+rm -rf apache-maven-3.6.3-bin.tar.gz
+
+vi /etc/profile.d/maven.sh
+---------------------------------
+export MAVEN_HOME=/opt/apache-maven-3.6.3
+export PATH=${MAVEN_HOME}/bin:$PATH
+----------------------------------
+source /etc/profile.d/maven.sh
+mvn -version
+
+TO install Docker on RHEL
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+dnf repolist -v
+dnf install docker-ce-3:18.09.1-3.el7
+systemctl enable --now docker
+systemctl start --now docker
+
+To login docker hub from local
+docker login
+
+To install kubectl: 
+curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+cp ./kubectl /usr/local/bin/kubectl && export PATH=$PATH:/usr/local/bin
+echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc
+kubectl version --short --client
+
+To install kops:
+wget https://github.com/kubernetes/kops/releases/download/1.10.0/kops-linux-amd64
+chmod +x kops-linux-amd64
+mv kops-linux-amd64 /usr/local/bin/kops
+kops version
+
+To create s3 bucket through awscli:
+aws s3 mb s3://nareshkopsbucket.in --region us-east-1
+export KOPS_STATE_STORE=s3://nareshkopsbucket.in
+
+To create key
+ssh-keygen
+
+To create cluster:
+kops create cluster \
+  --cloud=aws \
+  --zones=us-east-1a,us-east-1b \
+  --name=nareshkops.in \
+  --master-size="t2.micro" \
+  --node-size="t2.xlarge"  \
+  --node-count="2" \
+  --dns-zone=nareshkops.in \
+  --dns private
+
+kops update cluster nareshkops.in --yes
+kops validate cluster
+
+To get java code from github
+git clone https://github.com/kiranpayyavuala/kubernetes-postgesql.git
+
+cd kubernetes-postgesql/
+
+To build jar file
+mvn clean install -DskipTests=true
+
+cat Dockerfile
+cd target/
+cd ..
+
+To build docker image:
+docker build -t naresh240/spring-boot-postgres-on-k8s:v1 .
+docker images
+
+
+kubectl create -f deploymentkubernetes/postgres.yml
+kubectl get pods
+kubectl create configmap hostname-config --from-literal=postgres_host=$(kubectl get svc postgres -o jsonpath="{.spec.clusterIP}")
+
+vi spring-boot-app.yml
+note:
+	Add dockerusername with in the file
+
+kubectl create -f deploymentkubernetes/spring-boot-app.yml
+kubectl get pods
+
+kubectl expose deployment spring-boot-postgres-sample --type=LoadBalancer --port=8080
+kubectl get svc spring-boot-postgres-sample
+
+kubectl get svc
+kubectl get deployment
+kubectl delete svc spring-boot-postgres-sample postgres
+kubectl delete deployment spring-boot-postgres-sample postgres
+
+kubectl config get-clusters
+kops delete cluster nareshkops.in --yes
+
+##############################################################
+Delete the Spring Boot app deployment
+kubectl delete -f specs/spring-boot-app.yml
+
+Delete the service for the app
+kubectl delete svc spring-boot-postgres-sample
+
+Delete the hostname config map
+kubectl delete cm hostname-config
+
+Delete Postgres
+kubectl delete -f specs/postgres.yml
+
+
+
+

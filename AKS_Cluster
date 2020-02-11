@@ -1,0 +1,79 @@
+
+5b1364f4-e701-49db-bd1c-0476fa0c3565
+
+Install Necessary Tools
+#######################
+Git
+Azure CLI
+Kubernetes CLI (kubectl)
+Helm v2.14.1
+
+az login
+
+Resource Group Creation
+#######################
+az group create --name Naresh-RG --location eastus
+
+Vnet and Subnet Creation
+########################
+az network vnet create -g Naresh-RG -n myvnet --address-prefix 10.0.0.0/16 --subnet-name mysubnet --subnet-prefix 10.0.0.0/24
+
+AKS Cluster Creation
+####################
+
+az aks create -g "Naresh-RG" -n "myvnet" --subscription="5b1364f4-e701-49db-bd1c-0476fa0c3565" --resource-group Naresh-RG --name nareshaks --dns-name-prefix "nareshaks-dns" --skip-subnet-role-assignment --kubernetes-version "1.14.7" --location="eastus" --max-pods=30 --no-ssh-key --network-plugin="azure" --network-policy="calico" --output json --query nodeResourceGroup --node-count="2" --min-count="1" --max-count="3" --node-osdisk-size="100" --node-vm-size "Standard_DS2" --docker-bridge-address="172.17.0.1/16"  --vnet-subnet-id="/subscriptions/5b1364f4-e701-49db-bd1c-0476fa0c3565/resourceGroups/Naresh-RG/providers/Microsoft.Network/virtualNetworks/myvnet/subnets/mysubnet" --dns-service-ip="10.1.0.0" --service-cidr="10.1.0.0/24" --vm-set-type VirtualMachineScaleSets --enable-cluster-autoscaler --load-balancer-sku="standard" --tags Environment="Dev" --service-principal "1c4bf258-d251-4e0a-950b-a985756c8496" --client-secret "@n8I03qih6wQDw/LDQA]Y=.eb8EV]MEb" 
+
+
+Create a Static IP Address
+##########################
+az aks show --resource-group Naresh-RG --name nareshaks --query nodeResourceGroup -o tsv
+
+az network public-ip create --resource-group Naresh-RG --name astro-ip --allocation-method static
+
+Authenticate with your AKS Cluster
+##################################
+az aks get-credentials --resource-group Naresh-RG --name nareshaks
+
+Configure Helm with your AKS Cluster
+####################################
+Create a Kubernetes Namespace
+
+az aks get-credentials --resource-group Naresh-RG --name nareshaks
+
+kubectl get nodes
+kubectl config use-context nareshaks
+
+kubectl cluster-info
+kubectl config get-contexts
+kubectl create -f Downloads/rbac-config.yaml
+
+helm init --service-account tiller
+
+
+
+kubectl create namespace namespace-nareshaks
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+AKS Cluster Delete
+##################
+az aks delete --name nareshaks --resource-group Naresh-RG
+
+Resource Group Delete
+#####################
+az group delete --name Naresh-RG
+
+Vnet and Subnet Delete
+######################
+az network vnet subnet show -g Naresh-RG -n mysubnet --vnet-name myvnet
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+az ad sp create-for-rbac --name myAKSClusterServicePrincipal
+
+az role assignment create --assignee c733270c-d098-498c-a772-63aeabf24489 --role Contributor --scope /subscriptions/5b1364f4-e701-49db-bd1c-0476fa0c3565
+
+az aks get-credentials --resource-group Naresh-RG --name nareshaks
+
+az aks browse --resource-group Naresh-RG --name nareshaks
+
+az aks get-credentials --resource-group vamsikrishna-kubernetes --name vamsiaks

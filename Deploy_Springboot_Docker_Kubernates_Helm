@@ -1,0 +1,70 @@
+MYSQL Database Creation
+####################################
+aws rds create-db-instance \
+  --db-name mysqldb \
+  --allocated-storage 20 \
+  --db-instance-class db.t2.micro \
+  --db-instance-identifier mysqltest \
+  --engine mysql \
+  --master-username master \
+  --master-user-password Naresh#240
+
+git clone https://github.com/Naresh240/employee-jdbc.git
+cd employee-jdbc/
+
+vi Dockerfile
+-----------------------------------------------------
+FROM java:8
+ADD ./target/employe-jdbc-0.0.1-SNAPSHOT.jar app.jar
+RUN bash -c 'touch /app.jar'
+ENTRYPOINT ["java","-jar","app.jar"]
+-------------------------------------------------------
+
+vi src/main/resources/application.properties
+---------------------------------------------------
+spring.datasource.url=jdbc:mysql://mysqltest.crv7ncgwapjo.us-east-1.rds.amazonaws.com:3306/mysqldb
+spring.datasource.username=master
+spring.datasource.password=Naresh#240
+spring.datasource.platform=mysql
+spring.datasource.initialization-mode=always
+------------------------------------------------------
+
+With Dockerfile
+####################
+docker build -t naresh240/employee-jdbc .
+docker images
+docker run --name employee-jdbc -p 8080:8080 -d naresh240/employee-jdbc
+docker ps
+docker push naresh240/employee-jdbc
+
+WIth Kubernates
+##################
+kubectl run --image=naresh240/employee-jdbc employee-jdbc --port=8080
+kubectl expose deployment employee-jdbc --type=LoadBalancer --port 8080 --target-port 8080
+kubectl get deployment employee-jdbc
+kubectl get pods
+
+With Helm
+###############
+helm create chart
+cd chart/templates/
+rm -rf serviceaccount.yaml
+cd ~ 
+vi chart/values.yaml
+------------------------------------
+image:
+  repository: naresh240/employee-jdbc
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 8080
+------------------------------------
+helm install employee-jdbc chart
+export SERVICE_IP=$(kubectl get svc --namespace default employee-jdbc-chart -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo $SERVICE_IP
+echo http://$SERVICE_IP:8080
+kubectl get svc -w employee-jdbc-chart
+kubectl get pods
+helm delete employee-jdbc

@@ -1,0 +1,46 @@
+amazon-linux-extras install docker
+service docker start
+usermod -a -G docker ec2-user
+yum install -y git
+
+git clone https://github.com/Naresh240/HelloSpringEKS.git
+cd /opt
+wget http://apachemirror.wuchna.com/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+ll
+tar xvzf apache-maven-3.6.3-bin.tar.gz
+rm -rf apache-maven-3.6.3-bin.tar.gz
+ll
+cd apache-maven-3.6.3/
+pwd
+vi /etc/profile.d/maven.sh
+source /etc/profile.d/maven.sh
+mvn -version
+cd
+ll
+yum install java-1.8.0-openjdk -y
+mvn -version
+ll
+cd HelloSpringEKS/
+ll
+mvn clean install
+yum install java-1.8.0-openjdk-devel
+mvn clean install
+ll
+
+docker build -t hellospringeks:v1 .
+docker images
+
+docker run --name=hellospringekstest -p 8080:8080 -d hellospringeks:v1
+docker ps
+docker stop 7e56121c7e65
+
+docker ps -a
+docker rm 7e56121c7e65
+docker ps -a
+docker images
+
+docker rmi hellospringeks:v1
+docker images
+docker rmi openjdk:8-jdk-alpine
+docker images
+history

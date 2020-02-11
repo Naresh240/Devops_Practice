@@ -1,0 +1,66 @@
+vi /etc/ssh/sshd_config
+service sshd restart
+
+sudo -i
+
+passwd hadoop
+su - hadoop
+vi employee.csv
+hadoop fs -mkdir sparkinputdata
+hadoop fs -put employee.csv sparkinputdata
+hadoop fs -ls sparkinputdata
+connect to spark
+################
+val employeedata=spark.read.option("header", "true").csv("sparkinputdata/employee.csv")
+employeedata.write.parquet("sparkoutputdata")
+hadoop fs -ls sparkoutputdata
+
+To check data:
+--------------
+employeedata.show()
+employeedata.printSchema()
+
+val employee=spark.read.parquet("sparkoutputdata")
+employee.show()
+employee.printSchema()
+
+hadoop fs -rm sparkoutputdata/part-00000-d9b9d954-d753-4574-8feb-f69cebaa1094-c000.snappy.parquet
+
+hadoop fs -rm -R sparkoutputdata
+
+
+Hive:
+#####
+
+hive --service beeline
+!connect jdbc:hive2://ec2-54-211-80-151.compute-1.amazonaws.com:10000/default
+
+CREATE DATABASE IF NOT EXISTS userdb;
+CREATE EXTERNAL TABLE IF NOT EXISTS employee
+(
+empid string,
+ename string,
+sal string
+)
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+STORED AS parquet
+LOCATION 'hdfs://ip-172-31-48-88.ec2.internal:8020/user/hadoop/sparkoutput/';
+
+#######################
+CREATE EXTERNAL TABLE IF NOT EXISTS employee
+(
+empid string,
+ename string,
+sal string
+)
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+STORED AS parquet
+LOCATION 'hdfs://ip-172-31-81-71.ec2.internal:8020/user/hadoop/sparkoutputdata/'
+hdfs://ip-172-31-81-71.ec2.internal:8020/user/hadoop/sparkoutputdata
+
+MSCK REPAIR TABLE employee;
+select * from employee;
+describe employee;
+

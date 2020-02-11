@@ -1,0 +1,52 @@
+yum install wget -y
+wget https://packages.chef.io/files/stable/chefdk/4.7.73/el/8/chefdk-4.7.73-1.el7.x86_64.rpm
+rpm -ivh chefdk-4.7.73-1.el7.x86_64.rpm
+rpm -qa | grep chef
+yum install unzip -y
+Download starter kit from Organization [Chef Mange site] and copy to /tem file in our instance using winSCP
+
+unzip chef-starter.zip
+cd chef-repo/
+cp /tmp/Naresh_January.pem .
+chmod 400 Naresh_January.pem
+
+knife bootstrap 54.166.16.101 --connection-user ec2-user --sudo --ssh-identity-file Naresh_January.pem -N mynode1
+knife client list
+chef --version
+
+mkdir mycookbook
+cd mycookbook/
+chef generate cookbook htmlcookbook
+cd htmlcookbook/
+chef generate recipe html
+cd ~/mycookbook/
+vi htmlcookbook/recipes/html.rb
+#######################################################
+package 'wget' do
+  action :install
+end
+
+package 'tree' do
+  action :install
+end
+
+package 'git' do
+  action :install
+end
+
+package 'httpd' do
+  action :install
+end
+
+file '/var/www/html/index.html' do
+  content 'hello friends'
+  action :create
+end
+
+service 'httpd' do
+  action [:enable, :start]
+end
+#######################################################
+chef exec ruby -c htmlcookbook/recipes/html.rb
+chef-client --local-mode htmlcookbook/recipes/html.rb
+

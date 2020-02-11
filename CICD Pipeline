@@ -1,0 +1,69 @@
+node
+{
+    stage('SCM CheckOut'){
+		git 'https://github.com/mupparajuvamsi/dockerepo.git'
+    }
+    stage('Build Maven'){
+	def MAVEN_HOME = tool name: 'maven3', type: 'maven'
+	def MVN_CMD="${MAVEN_HOME}/bin/mvn"  
+	dir("javasampleappwar"){
+	         sh "${MVN_CMD} clean  package"
+       }
+	}
+	stage('build docker image') {
+	 dir("javasampleappwar") {
+          sh 'docker build -t naresh240/javasampleappwar .'
+       }
+	}
+	stage('push docker image'){
+    withCredentials([string(credentialsId: 'dockerpwd', variable: 'docker')]) {
+    sh 'docker login -u naresh240 -p ${docker}'
+		}
+	sh 'docker push naresh240/javasampleappwar:latest'
+	}
+	stage('working on application-server'){
+    def dockerrun = 'docker run -p 8081:8081 -d --name javasampleappwar2 naresh240/javasampleappwar:latest'
+	sshagent(['application-server']) {
+		sh 'echo "Git committer email: ${GIT_COMMIT_EMAIL}"'
+        sh "ssh -o StrictHostKeyChecking=no ec2-user@100.26.190.219 ${dockerrun}"
+		}
+	}
+}
+
+
+##########################################################################################################
+
+stage('ExcuteSonarQubeReport')
+{
+sh "${mavenhome}/bin/mvn sonar:sonar -f mavewebappdemo/pom.xml"
+}
+stage('NexusArtifacory')
+{
+sh "${mavenhome}/bin/mvn deploy -f mavewebappdemo/pom.xml"
+}
+stage('DepolyToTomacat')
+{
+
+sshagent(['application-server']) {
+    sh 'echo "Git committer email: ${GIT_COMMIT_EMAIL}"'
+    sh 'scp -o StrictHostKeyChecking=no mavewebappdemo/target/mavewebappdemo.war ec2-user@100.26.190.219:/opt/apache-tomcat-9.0.30/webapps'
+
+  }
+}
+
+
+##########################################################################################################
+
+stage('Remove Previous Container'){
+	try{
+		def dockerRm = 'docker rm -f javasampleappwar'
+		sshagent(['application-server']) {
+			sh "ssh -o StrictHostKeyChecking=no ec2-user@3.89.84.110 ${dockerRm}"
+		}
+	}
+	catch(error){
+		//  do nothing if there is an exception
+		}
+	}
+
+sudo chown ec2-user:docker /var/run/docker.sock

@@ -1,0 +1,118 @@
+Kubernetes installation
+Perform the next steps on both EC2.
+Update packages list and installed packages:
+	apt update && apt -y upgrade
+Add Docker and Kubernetes repositories:
+	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+	add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+	curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+	echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+	apt update
+	apt install -y docker-ce kubelet kubeadm kubectl
+	
+Check a hostname now:
+	hostname
+Get it as a fully qualified domain name (FQDN):
+	curl http://169.254.169.254/latest/meta-data/local-hostname 
+Set the hostname as FQDN:
+	hostnamectl set-hostname ip-10-0-0-9.eu-west-3.compute.internal
+Check now:
+	hostname
+
+Cluster set up
+Create a/etc/kubernetes/aws.yml file:
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+networking:
+  serviceSubnet: "10.100.0.0/16"
+  podSubnet: "10.244.0.0/16"
+apiServer:
+  extraArgs:
+    cloud-provider: "aws"
+controllerManager:
+  extraArgs:
+    cloud-provider: "aws"
+
+kubeadm init --config /etc/kubernetes/aws.yml
+
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown ubuntu:ubuntu $HOME/.kube/config
+Check nodes:
+kubectl get nodes -o wide
+
+Flannel CNI installation
+From the Master node execute:
+	kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+You can get your cluster-info using the config view:
+
+
+Attaching the Worker Node:
+On the Worker node create a "/etc/kubernetes/node.yml" file with the JoinConfiguration:
+	vi /etc/kubernetes/node.yml
+
+kubeadm join 10.0.0.168:6443 --token dbhvcp.t45sqx2sznffxyva \
+    --discovery-token-ca-cert-hash sha256:b187a8e80e922f5aa63da588ffc007230874f409584ddc85851676d883acdaa4
+
+  
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    token: "dbhvcp.t45sqx2sznffxyva"
+    apiServerEndpoint: "10.0.0.168:6443"
+    caCertHashes:
+      - "sha256:b187a8e80e922f5aa63da588ffc007230874f409584ddc85851676d883acdaa4"
+nodeRegistration:
+  name: ip-10-0-0-158.ec2.internal
+  kubeletExtraArgs:
+    cloud-provider: aws
+	
+Join this node to the cluster:
+	kubeadm join --config /etc/kubernetes/node.yml
+Go back to the Master, check nodes one more time:
+
+
+Create "nginx.yml" file:
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: hello
+spec:
+  type: LoadBalancer
+  selector:
+    app: hello
+  ports:
+    - name: http
+      protocol: TCP
+      # ELB's port
+      port: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+        - name: hello
+          image: nginx
+Apply it:		  
+kubectl apply -f nginx.yml
+
+Check Deployment:
+kubectl get deployments
+
+a2731548efc66491fb3ad0735e34ed10-1086833560.us-east-1.elb.amazonaws.com

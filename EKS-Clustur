@@ -1,0 +1,107 @@
+#############################################################################################
+#########################									#################################
+#########################			EKS-CLUSTER				#################################
+#########################									#################################
+#############################################################################################
+
+aws configure
+
+kubectl
+-------
+curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+mkdir -p $HOME/bin
+cp ./kubectl $HOME/bin/kubectl
+export PATH=$HOME/bin:$PATH
+echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+source $HOME/.bashrc
+kubectl version --short --client
+
+aws-iam-authenticator
+---------------------
+curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator
+chmod +x ./aws-iam-authenticator
+cp ./aws-iam-authenticator $HOME/bin/aws-iam-authenticator
+export PATH=$HOME/bin:$PATH
+echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+aws-iam-authenticator --help
+
+cloudformation-demovpc
+----------------------
+https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/amazon-eks-vpc-sample.yaml
+
+EKS-CLUSTER
+-----------
+aws eks create-cluster \
+  --name eks-cluster \
+  --region us-east-1 \
+  --role-arn arn:aws:iam::537620694712:role/eksrole \
+  --resources-vpc-config subnetIds=subnet-03685a60fb63955e9,subnet-00e2cc81ed69af61c,subnet-0578b7ba4f476032a,securityGroupIds=sg-04e1030cc4122ef21
+
+aws eks --region us-east-1 describe-cluster --name eks-cluster --query cluster.status
+
+aws eks --region us-east-1 update-kubeconfig --name eks-cluster
+
+cloudformation-worker-node
+---------------------------
+https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/amazon-eks-nodegroup.yaml
+
+ami-087a82f6b78a07557
+
+To enable worker nodes to join your cluster
+-------------------------------------------
+curl -o aws-auth-cm.yaml https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/aws-auth-cm.yaml
+vi aws-auth-cm.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
+data:
+  mapRoles: |
+    - rolearn: arn:aws:iam::537620694712:role/worker-nodes-NodeInstanceRole-1QYKG04KLSGSW
+      username: system:node:{{EC2PrivateDNSName}}
+      groups:
+        - system:bootstrappers
+        - system:nodes
+
+kubectl apply -f aws-auth-cm.yaml
+kubectl get nodes
+
+##############################################################################################################
+
+Install Docker:
+---------------
+amazon-linux-extras install docker -y
+service docker start
+usermod -a -G docker ec2-user
+chmod 666 /var/run/docker.sock
+chown ec2-user:docker /var/run/docker.sock
+
+Helm Installation on Linux:
+---------------------------
+wget https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz
+tar xvzf helm-v3.0.2-linux-amd64.tar.gz
+cd linux-amd64/
+mv helm /usr/local/bin
+export PATH=$PATH:/usr/local/bin	
+
+MYSQL Installation on Linux:
+----------------------------
+wget https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+yum localinstall mysql57-community-release-el7-11.noarch.rpm -y
+yum install mysql-community-server -y
+systemctl start mysqld.service
+# Here we get pwd
+cat /var/log/mysqld.log
+# Mysql Login
+mysql -u root -p
+# To change pwd for "root" user
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'Naresh#240';
+# Enable Remote Access (Grant)
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY 'Naresh#240' WITH GRANT OPTION;
+GRANT ALL ON mysql.* TO root@localhost;
+
+SELECT user,authentication_string,plugin,host FROM mysql.user;

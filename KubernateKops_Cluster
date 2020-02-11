@@ -1,0 +1,127 @@
+#############################################################################################
+#########################									#################################
+#########################			KOPS-CLUSTER			#################################
+#########################									#################################
+#############################################################################################
+
+aws --version
+yum install python2-pip -y
+pip2 install awscli
+aws configure
+curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+cp ./kubectl /usr/local/bin/kubectl && export PATH=$PATH:/usr/local/bin
+echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc
+kubectl version --short --client
+wget https://github.com/kubernetes/kops/releases/download/1.10.0/kops-linux-amd64
+chmod +x kops-linux-amd64
+mv kops-linux-amd64 /usr/local/bin/kops
+kops version
+yum install wget -y
+wget https://github.com/kubernetes/kops/releases/download/1.10.0/kops-linux-amd64
+chmod +x kops-linux-amd64
+mv kops-linux-amd64 /usr/local/bin/kops
+kops version
+export KOPS_STATE_STORE=s3://nareshkopsbucket.in
+kops create cluster   --cloud=aws       --zones=us-east-1a,us-east-1b      --name=nareshkops.in       --master-size="t2.micro"       --node-size="t2.xlarge"       --node-count="2"       --dns-zone=nareshkops.in       --dns private
+kops update cluster nareshkops.in --yes
+kops validate cluster
+kops create cluster   --cloud=aws       --zones=us-east-1a,us-east-1b      --name=nareshkops.in       --master-size="t2.micro"       --node-size="t2.xlarge"       --node-count="2"       --dns-zone=nareshkops.in       --dns private
+kops update cluster nareshkops.in --yes
+kops validate cluster
+aws configure
+aws s3 mb s3://nareshkopsbucket.in --region us-east-1
+aws configure
+aws s3 mb s3://nareshkopsbucket.in --region us-east-1
+kops create cluster   --cloud=aws       --zones=us-east-1a,us-east-1b      --name=nareshkops.in       --master-size="t2.micro"       --node-size="t2.xlarge"       --node-count="2"       --dns-zone=nareshkops.in       --dns private
+kops update cluster nareshkops.in --yes
+kops validate cluster
+kops create cluster   --cloud=aws       --zones=us-east-1a,us-east-1b      --name=nareshkops.in       --master-size="t2.micro"       --node-size="t2.xlarge"       --node-count="2"       --dns-zone=nareshkops.in       --dns private
+kops create secret --name nareshkops.in sshpublickey admin -i ~/.ssh/id_rsa.pub
+ssh-keygen
+kops update cluster nareshkops.in --yes
+kubectl delete cluster nareshkops.in
+kops create secret --name nareshkops.in sshpublickey admin -i ~/.ssh/id_rsa.pub
+kops update cluster nareshkops.in --yes
+kops validate cluster
+kubectl delete cluster nareshkops.in --yes
+kubectl config delete-clusters nareshkops.in
+kops create cluster   --cloud=aws       --zones=us-east-1a,us-east-1b      --name=nareshkops.in       --master-size="t2.micro"       --node-size="t2.xlarge"       --node-count="2"       --dns-zone=nareshkops.in       --dns private
+kops update cluster nareshkops.in --yes
+kops rolling-update cluster
+kops delete cluster nareshkops.in --yes
+kops create cluster   --cloud=aws       --zones=us-east-1a,us-east-1b      --name=nareshkops.in       --master-size="t2.micro"       --node-size="t2.xlarge"       --node-count="2"       --dns-zone=nareshkops.in       --dns private
+kops update cluster nareshkops.in --yes
+kops validate cluster
+ssh -i .ssh/id_rsa admin@54.175.241.84
+kubectl get nodes
+git --version
+yum install git -y
+cd /opt
+curl http://apachemirror.wuchna.com/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz -O
+tar xvf apache-maven-3.6.3-bin.tar.gz
+export PATH=$PATH:/opt/apache-maven-3.6.3/bin
+mvn -version
+yum install java-1.8.0-openjdk java-1.8.0-openjdk-devel -y
+mvn -version
+git clone https://github.com/kiranpayyavuala/kubernetes-postgesql.git
+cd kubernetes-postgesql/
+ls -lrt
+mvn clean install -DskipTests=true
+cat Dockerfile
+ll target/
+docker build -t spring-boot-postgres-on-k8s:v1 .
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+dnf repolist -v
+dnf install docker-ce-3:18.09.1-3.el7
+systemctl enable docker
+systemctl start docker
+docker build -t spring-boot-postgres-on-k8s:v1 .
+docker images
+docker login
+docker build -t naresh240/spring-boot-postgres-on-k8s:v1 .
+docker images
+docker push naresh240/spring-boot-postgres-on-k8s:v1
+kubectl create -f deploymentkubernetes/postgres.yml
+docker ps
+kubectl get pods
+cd deploymentkubernetes/
+ls -lt
+vi spring-boot-app.yml
+ls -lt
+kubectl create -f deploymentkubernetes/spring-boot-app.yml
+cd ..
+kubectl create -f deploymentkubernetes/spring-boot-app.yml
+kubectl get pods
+kubectl logs spring-boot-postgres-sample-fdf5668d4-crflh -f
+docker mages
+docker images
+kubectl get pods
+kubectl describe pod spring-boot-postgres-sample-fdf5668d4-crflh
+kubectl create configmap hostname-config --from-literal=postgres_host=$(kubectl get svc postgres -o jsonpath="{.spec.clusterIP}")
+kubectl get deloyment
+kubectl get deployment
+kubectl delete deployment spring-boot-postgres-sample
+kubectl create -f deploymentkubernetes/spring-boot-app.yml
+kubectl get pods
+kubectl expose deployment spring-boot-postgres-sample --type=LoadBalancer --port=8080
+kubectl get svc spring-boot-postgres-sample
+kubectl get svc
+kubectl delete svc spring-boot-postgres-sample
+kubectl delete deployment spring-boot-postgres-sample
+cd ..
+git clone https://github.com/mkjelland/spring-boot-postgres-on-k8s-sample.git
+cd spring-boot-postgres-on-k8s-sample/
+mvn clean install -DskpipTests=true
+vi pom.xml
+mvn clean install -DskipTests=true
+kubectl create -f specs/postgres.yml
+docker build -t naresh240/spring-boot-postgres-on-k8s:v1 .
+docker push naresh240/spring-boot-postgres-on-k8s:v1
+cd specs/
+vi spring-boot-app.yml
+cd ..
+kubectl create -f specs/spring-boot-app.yml
+kubectl expose deployment spring-boot-postgres-sample --type=LoadBalancer --port=8080
+cd
+history

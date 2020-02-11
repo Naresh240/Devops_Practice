@@ -1,0 +1,33 @@
+az aks create \
+  --subscription="Free Trial"\
+  -n "vamsiaks" \
+  -g "vamsikrishna-kubernetes" \
+  --dns-name-prefix "vamsiaks-EAST" \
+  --skip-subnet-role-assignment \
+  --kubernetes-version "1.15.7" \
+  --location="eastus" \
+  --max-pods="30" \
+  --generate-ssh-keys \
+  --network-plugin="azure" \
+  --network-policy="calico" \
+  --node-count="1" \
+  --max-count="1" \
+  --min-count="1" \
+  --node-osdisk-size="50" \
+  --node-vm-size="Standard_D4s_v3" \
+  --docker-bridge-address="172.17.0.1/16" \
+  --service-cidr="172.19.0.0/16" \
+  --vnet-subnet-id="/subscriptions/5b1364f4-e701-49db-bd1c-0476fa0c3565/resourceGroups/vamsikrishna-kubernetes/providers/Microsoft.Network/virtualNetworks/vamsi-vnet/subnets/aks-subnet" \
+  --dns-service-ip="172.19.0.10" \
+  --vm-set-type VirtualMachineScaleSets \
+  --enable-cluster-autoscaler \
+  --service-principal "240a6bd5-7011-4d58-9262-890993b1f347" \
+  --client-secret ".d@.2VS9UT=3jvd3E-4:uBvb?W-VcCnq" \
+  --load-balancer-sku "standard" \
+  --tags Environment="Dev"
+  
+  
+  az aks get-credentials --name vamsiaks --resource-group vamsikrishna-kubernetes
+  
+ slb = Get-AzureRmLoadBalancer -Name "kubernetes" -ResourceGroupName "MC_vamsikrishna-kubernetes_vamsiaks_eastus"
+ slb | Set-AzureRmLoadBalancerRuleConfig -Name "kubernetes" -DisableOutboundSNAT true

@@ -1,0 +1,29 @@
+node
+{
+def mavenhome=tool name:"maven3"
+stage('checkout')
+{
+git credentialsId: 'b76c3f0f-b167-4fd6-8cbd-7842a3dff07e', url: 'https://github.com/venupratap/awsprojectdemo.git'
+}
+stage('mavenbuild')
+{
+sh "${mavenhome}/bin/mvn clean package -f mavewebappdemo/pom.xml"
+}
+stage('ExcuteSonarQubeReport')
+{
+sh "${mavenhome}/bin/mvn sonar:sonar -f mavewebappdemo/pom.xml"
+}
+stage('NexusArtifacory')
+{
+sh "${mavenhome}/bin/mvn deploy -f mavewebappdemo/pom.xml"
+}
+stage('DepolyToTomacat')
+{
+
+sshagent(['c5eefa65-6563-425b-81f5-39878bdd4a87']) {
+    sh 'echo "Git committer email: ${GIT_COMMIT_EMAIL}"'
+    sh 'scp -o StrictHostKeyChecking=no mavewebappdemo/target/mavewebappdemo.war ec2-user@18.223.124.29:/opt/apache-tomcat-9.0.30/webapps'
+
+  }
+}
+}

@@ -1,0 +1,62 @@
+Download sample external-dns manifest
+
+
+wget https://raw.githubusercontent.com/kubernetes-sigs/aws-alb-ingress-controller/v1.1.5/docs/examples/external-dns.yaml
+
+Edit the --domain-filter flag to include your hosted zone(s)
+The following example is for a hosted zone test-dns.com:
+
+args:
+- --source=service
+- --source=ingress
+- --domain-filter=test-dns.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+- --provider=aws
+- --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+- --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+- --registry=txt
+- --txt-owner-id=my-identifier
+
+Deploy external-dns
+kubectl apply -f external-dns.yaml
+
+Verify it deployed successfully.
+kubectl logs -f $(kubectl get po | egrep -o 'external-dns[A-Za-z0-9-]+')
+
+
+nginx.yaml
+############
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.nginxmydomain.tk.
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  selector:
+    app: nginx
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+          name: http
+
+
